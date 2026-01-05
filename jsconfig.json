@@ -1,0 +1,52 @@
+{
+    "compilerOptions": {
+        // Core settings
+        "checkJs": true,
+        "allowJs": true,
+        "target": "ES2022",
+        "module": "esnext",
+        "moduleResolution": "node",
+        "skipLibCheck": true,
+
+        // Important for production
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true, // Prevents case-sensitivity issues
+        "resolveJsonModule": true, // Allow importing JSON files
+
+        // Path resolution (helpful for large apps)
+        "baseUrl": "./src",
+        "paths": {
+            "@/*": ["*"],
+            "@/components/*": ["components/*"],
+            "@/utils/*": ["utils/*"],
+            "@/config/*": ["config/*"]
+        },
+
+        // Better error detection (without being too strict)
+        "noImplicitReturns": true, // Functions should return consistently
+        "noFallthroughCasesInSwitch": true, // Catch missing break statements
+        "noUncheckedIndexedAccess": false, // Keep false for JS flexibility
+
+        // Library support
+        "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    },
+    "include": [
+        "src/**/*.js",
+        "src/**/*.json" // Include JSON files
+    ],
+    "exclude": [
+        "node_modules",
+        "**/node_modules/*",
+        "dist",
+        "build",
+        "coverage",
+        "**/*.test.js", // Exclude test files from main checking
+        "**/*.spec.js"
+    ],
+    "typeAcquisition": {
+        "enable": true,
+        "include": ["node", "express", "react", "lodash"], // Add libraries you use
+        "exclude": []
+    }
+}
