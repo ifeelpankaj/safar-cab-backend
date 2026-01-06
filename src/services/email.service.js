@@ -2,20 +2,50 @@ import { createTransport } from 'nodemailer'
 import config from '../config/config.js'
 import logger from '../utils/logger.js'
 
-const transporter = createTransport({
-    // @ts-ignore
+const smtpPort = Number(config.SMTP_PORT) || 587
+const isSecure = smtpPort === 465
+
+// Log SMTP configuration on startup (without sensitive data)
+logger.info('SMTP Configuration', {
     host: config.SMTP_HOST,
-    port: Number(config.SMTP_PORT),
-    secure: config.SMTP_PORT === '465', // true for 465, false for other ports
+    port: smtpPort,
+    secure: isSecure,
+    user: config.SMTP_USER ? `${config.SMTP_USER.substring(0, 3)}***` : 'NOT SET',
+    fromEmail: config.FROM_EMAIL
+})
+
+const transporter = createTransport({
+    host: config.SMTP_HOST,
+    port: smtpPort,
+    secure: isSecure, // true for 465, false for other ports (587 uses STARTTLS)
     auth: {
         user: config.SMTP_USER,
         pass: config.SMTP_PASS
     },
-    pool: true, // use pooled connections
-    maxConnections: 5, // limit to 5 concurrent connections
-    maxMessages: 100, // limit to 100 messages per connection
-    rateDelta: 1000, // limit to 1 message per second
-    rateLimit: 5 // limit to 5 messages per rate Delta
+    // TLS configuration for cloud environments
+    tls: {
+        rejectUnauthorized: true, // Set to false only for debugging
+        minVersion: 'TLSv1.2'
+    },
+    // Connection settings optimized for cloud
+    connectionTimeout: 30000, // 30 seconds
+    greetingTimeout: 30000,
+    socketTimeout: 60000,
+    // Pool settings
+    pool: true,
+    maxConnections: 3, // reduced for cloud environments
+    maxMessages: 50,
+    rateDelta: 1000,
+    rateLimit: 3
+})
+
+// Verify transporter connection on startup
+transporter.verify((error) => {
+    if (error) {
+        logger.error('SMTP connection verification failed', { meta: { error: error.message, code: error.name } })
+    } else {
+        logger.info('SMTP server is ready to send emails')
+    }
 })
 
 export const sendMail = async (email, subject, htmlContent, text) => {
@@ -33,12 +63,20 @@ export const sendMail = async (email, subject, htmlContent, text) => {
         replyTo: config.FROM_EMAIL
     }
     try {
-        logger.info(`Sending email to ${email}`, { subject })
+        logger.info(`Attempting to send email to ${email}`, { subject, host: config.SMTP_HOST, port: config.SMTP_PORT })
         const info = await transporter.sendMail(mailOptions)
-        logger.info(`Email sent successfully to ${email}`, { meta: { messageId: info.messageId } })
+        logger.info(`Email sent successfully to ${email}`, { meta: { messageId: info.messageId, response: info.response } })
         return info
     } catch (error) {
-        logger.error(`Failed to send email to ${email}`, { meta: { error: error.message, stack: error.stack } })
+        logger.error(`Failed to send email to ${email}`, {
+            meta: {
+                error: error.message,
+                code: error.code,
+                command: error.command,
+                responseCode: error.responseCode,
+                stack: error.stack
+            }
+        })
         throw new Error(`Failed to send email: ${error.message}`)
     }
 }
