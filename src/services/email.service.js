@@ -1,12 +1,11 @@
 import { createTransport } from 'nodemailer'
-import { promisify } from 'util'
 import config from '../config/config.js'
 import logger from '../utils/logger.js'
 
 const transporter = createTransport({
     // @ts-ignore
     host: config.SMTP_HOST,
-    port: config.SMTP_PORT,
+    port: Number(config.SMTP_PORT),
     secure: config.SMTP_PORT === '465', // true for 465, false for other ports
     auth: {
         user: config.SMTP_USER,
@@ -16,22 +15,26 @@ const transporter = createTransport({
     maxConnections: 5, // limit to 5 concurrent connections
     maxMessages: 100, // limit to 100 messages per connection
     rateDelta: 1000, // limit to 1 message per second
-    rateLimit: 5 // limit to 5 messages per rate  Delta
+    rateLimit: 5 // limit to 5 messages per rate Delta
 })
-
-const sendMailPromise = promisify(transporter.sendMail).bind(transporter)
 
 export const sendMail = async (email, subject, htmlContent, text) => {
     const mailOptions = {
-        from: `"${config.FROM_NAME}" <${config.SMTP_USER}>`,
+        from: `"${config.FROM_NAME}" <${config.FROM_EMAIL}>`,
         to: email,
         subject,
         html: htmlContent,
-        text
+        text: text || htmlContent.replace(/<[^>]*>/g, ''), // Always include plain text version
+        headers: {
+            'X-Priority': '3', // Normal priority
+            'X-Mailer': 'Safar Cabs Mailer',
+            'MIME-Version': '1.0'
+        },
+        replyTo: config.FROM_EMAIL
     }
     try {
         logger.info(`Sending email to ${email}`, { subject })
-        const info = await sendMailPromise(mailOptions)
+        const info = await transporter.sendMail(mailOptions)
         logger.info(`Email sent successfully to ${email}`, { meta: { messageId: info.messageId } })
         return info
     } catch (error) {

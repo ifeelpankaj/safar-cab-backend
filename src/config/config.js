@@ -11,6 +11,7 @@ export default {
     SESSION_SECRET: process.env.SESSION_SECRET,
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
     FROM_NAME: process.env.FROM_NAME,
+    FROM_EMAIL: process.env.FROM_EMAIL,
     //auth
     OTP_LENGTH: process.env.OTP_LENGTH,
     OTP_EXPIRE: process.env.OTP_EXPIRE,

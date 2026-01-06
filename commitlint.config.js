@@ -5,7 +5,7 @@ export default {
             2,
             'always',
             [
-                'Initial', // For initial commit
+                'initial', // For initial commit
                 'feat', // Introduces a new feature
                 'fix', // Fixes a bug
                 'docs', // Documentation changes only
